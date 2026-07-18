@@ -10,11 +10,28 @@ const SEVERITY_COLOR = {
 
 const TABS = ["ALL", "CRITICAL", "HIGH", "MEDIUM", "LOW"];
 
-export default function FindingsTable({ findings }) {
+export default function FindingsTable({ findings, scanId, onAcknowledge }) {
   const [filter, setFilter] = useState("ALL");
+  const [pending, setPending] = useState(null);
 
   const filtered =
     filter === "ALL" ? findings : findings.filter((f) => f.severity === filter);
+
+  const handleAck = async (finding) => {
+    setPending(finding._id);
+    const res = await fetch("/api/scan/acknowledge", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        scanId,
+        findingId: finding._id,
+        module: finding.module,
+      }),
+    });
+    const updated = await res.json();
+    setPending(null);
+    onAcknowledge(updated);
+  };
 
   return (
     <div>
@@ -40,16 +57,18 @@ export default function FindingsTable({ findings }) {
         </p>
       ) : (
         <div className="space-y-2">
-          {filtered.map((f, i) => (
+          {filtered.map((f) => (
             <div
-              key={i}
-              className="flex items-start gap-3 px-4 py-3 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg"
+              key={f._id}
+              className={`flex items-start gap-3 px-4 py-3 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg ${
+                f.acknowledged ? "opacity-50" : ""
+              }`}
             >
               <span
                 className="mt-1 w-2 h-2 rounded-full shrink-0"
                 style={{ background: SEVERITY_COLOR[f.severity] }}
               />
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <p className="font-[family-name:var(--font-data)] text-sm truncate">
                   {f.detail}
                 </p>
@@ -57,6 +76,13 @@ export default function FindingsTable({ findings }) {
                   {f.fixHint}
                 </p>
               </div>
+              <button
+                onClick={() => handleAck(f)}
+                disabled={pending === f._id}
+                className="text-xs px-2 py-1 rounded border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] shrink-0 disabled:opacity-50"
+              >
+                {f.acknowledged ? "Undo" : "Ack"}
+              </button>
             </div>
           ))}
         </div>

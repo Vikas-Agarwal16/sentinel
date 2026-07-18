@@ -49,7 +49,10 @@ export async function POST(req) {
 }
 
 export async function GET() {
+  const session = await getServerSession(authOptions);
+  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+
   await connectDB();
-  const scan = await Scan.findOne().sort({ timestamp: -1 });
+  const scan = await Scan.findOne({ userId: session.user.id }).sort({ timestamp: -1 });
   return Response.json(scan);
 }

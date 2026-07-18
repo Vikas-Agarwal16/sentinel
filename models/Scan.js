@@ -5,7 +5,8 @@ const FindingSchema = new mongoose.Schema({
   severity: String,
   detail: String,
   fixHint: String,
-}, { _id: false });
+  acknowledged: { type: Boolean, default: false },
+});
 
 const DepFindingSchema = new mongoose.Schema({
   type: String,
@@ -14,7 +15,8 @@ const DepFindingSchema = new mongoose.Schema({
   vulnId: String,
   severity: String,
   summary: String,
-}, { _id: false });
+  acknowledged: { type: Boolean, default: false },
+});
 
 const ScanSchema = new mongoose.Schema({
   userId: mongoose.Schema.Types.ObjectId,

@@ -1,5 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import Topbar from "@/components/Topbar";
 import ScanError from "@/components/ScanError";
 import StatCard from "@/components/StatCard";
@@ -7,12 +9,22 @@ import SeverityBar from "@/components/SeverityBar";
 import FindingsTable from "@/components/FindingsTable";
 
 export default function Dashboard() {
+  const { status } = useSession();
+  const router = useRouter();
   const [scan, setScan] = useState(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    fetch("/api/scan").then((r) => r.json()).then(setScan);
-  }, []);
+    if (status === "unauthenticated") {
+      router.push("/");
+    }
+  }, [status, router]);
+
+  useEffect(() => {
+    if (status === "authenticated") {
+      fetch("/api/scan").then((r) => r.json()).then(setScan);
+    }
+  }, [status]);
 
   const rescan = () => {
     setLoading(true);
@@ -24,6 +36,15 @@ export default function Dashboard() {
       });
   };
 
+  if (status === "loading" || status === "unauthenticated") {
+    return (
+      <>
+        <Topbar />
+        <p className="p-8 text-[var(--color-text-muted)]">Loading...</p>
+      </>
+    );
+  }
+
   if (!scan) {
     return (
       <>
@@ -33,12 +54,15 @@ export default function Dashboard() {
     );
   }
 
-  const allFindings = [
-    ...(scan.modules?.github?.findings || []),
+ const allFindings = [
+    ...(scan.modules?.github?.findings || []).map((f) => ({ ...f, module: "github" })),
     ...(scan.modules?.deps?.findings || []).map((f) => ({
+      module: "deps",
+      _id: f._id,
       severity: f.severity,
       detail: `${f.package}@${f.version} — ${f.vulnId}`,
       fixHint: f.summary,
+      acknowledged: f.acknowledged,
     })),
   ];
 
@@ -71,14 +95,18 @@ export default function Dashboard() {
           <StatCard label="Total" value={allFindings.length} />
         </div>
 
- {scan.modules?.github?.failed && <ScanError module="GitHub" />}
+        {scan.modules?.github?.failed && <ScanError module="GitHub" />}
         {scan.modules?.deps?.failed && <ScanError module="Dependency" />}
 
         <div className="mb-8">
           <SeverityBar counts={counts} />
         </div>
 
-        <FindingsTable findings={allFindings} />
+        <FindingsTable
+          findings={allFindings}
+          scanId={scan._id}
+          onAcknowledge={setScan}
+        />
       </main>
     </>
   );
