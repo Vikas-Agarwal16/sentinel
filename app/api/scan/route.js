@@ -3,9 +3,8 @@ import connectDB from "@/lib/db";
 import Scan from "@/models/Scan";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { scanGithub } from "@/lib/github";
-// import { computeScore } from "@/lib/scoring";
-import { scanDependencies } from "@/lib/depscan";
 import { computeScore, combineScores } from "@/lib/scoring";
+import { scanDependencies } from "@/lib/depscan";
 
 export async function POST(req) {
   const session = await getServerSession(authOptions);
@@ -13,18 +12,35 @@ export async function POST(req) {
 
   await connectDB();
 
-  const githubFindings = await scanGithub(session.accessToken);
-  const depFindings = await scanDependencies();
+  let githubFindings = [];
+  let githubScore = 100;
+  let githubFailed = false;
+  try {
+    githubFindings = await scanGithub(session.accessToken);
+    githubScore = computeScore(githubFindings);
+  } catch (err) {
+    console.error("GitHub scan failed:", err.message);
+    githubFailed = true;
+  }
 
-  const githubScore = computeScore(githubFindings);
-  const depScore = computeScore(depFindings);
+  let depFindings = [];
+  let depScore = 100;
+  let depFailed = false;
+  try {
+    depFindings = await scanDependencies();
+    depScore = computeScore(depFindings);
+  } catch (err) {
+    console.error("Dependency scan failed:", err.message);
+    depFailed = true;
+  }
+
   const overallScore = combineScores(githubScore, depScore);
 
   const scan = await Scan.create({
     userId: session.user.id,
     modules: {
-      github: { findings: githubFindings, score: githubScore },
-      deps: { findings: depFindings, score: depScore },
+      github: { findings: githubFindings, score: githubScore, failed: githubFailed },
+      deps: { findings: depFindings, score: depScore, failed: depFailed },
     },
     overallScore,
   });

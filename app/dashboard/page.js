@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Topbar from "@/components/Topbar";
-
+import ScanError from "@/components/ScanError";
 import StatCard from "@/components/StatCard";
 import SeverityBar from "@/components/SeverityBar";
 import FindingsTable from "@/components/FindingsTable";
@@ -70,6 +70,9 @@ export default function Dashboard() {
           <StatCard label="High" value={counts.HIGH || 0} accent="var(--color-high)" />
           <StatCard label="Total" value={allFindings.length} />
         </div>
+
+ {scan.modules?.github?.failed && <ScanError module="GitHub" />}
+        {scan.modules?.deps?.failed && <ScanError module="Dependency" />}
 
         <div className="mb-8">
           <SeverityBar counts={counts} />

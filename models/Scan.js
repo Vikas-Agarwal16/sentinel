@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const FindingSchema = new mongoose.Schema({
   type: String,
-  severity: String, // CRITICAL | HIGH | MEDIUM | LOW
+  severity: String,
   detail: String,
   fixHint: String,
 }, { _id: false });
@@ -20,8 +20,8 @@ const ScanSchema = new mongoose.Schema({
   userId: mongoose.Schema.Types.ObjectId,
   timestamp: { type: Date, default: Date.now },
   modules: {
-    github: { findings: [FindingSchema], score: Number },
-    deps: { findings: [DepFindingSchema], score: Number },
+    github: { findings: [FindingSchema], score: Number, failed: Boolean },
+    deps: { findings: [DepFindingSchema], score: Number, failed: Boolean },
   },
   overallScore: Number,
   previousScore: Number,
