@@ -1,41 +1,82 @@
 "use client";
 import { useEffect, useState } from "react";
-import ExposureDial from "@/components/ExposureDial";
-import FindingsList from "@/components/FindingsList";
+import Topbar from "@/components/Topbar";
 
+import StatCard from "@/components/StatCard";
+import SeverityBar from "@/components/SeverityBar";
+import FindingsTable from "@/components/FindingsTable";
 
 export default function Dashboard() {
   const [scan, setScan] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     fetch("/api/scan").then((r) => r.json()).then(setScan);
   }, []);
 
   const rescan = () => {
-    fetch("/api/scan", { method: "POST" }).then((r) => r.json()).then(setScan);
+    setLoading(true);
+    fetch("/api/scan", { method: "POST" })
+      .then((r) => r.json())
+      .then((data) => {
+        setScan(data);
+        setLoading(false);
+      });
   };
 
-  if (!scan) return <p className="p-8">Loading...</p>;
+  if (!scan) {
+    return (
+      <>
+        <Topbar />
+        <p className="p-8 text-[var(--color-text-muted)]">Loading...</p>
+      </>
+    );
+  }
+
+  const allFindings = [
+    ...(scan.modules?.github?.findings || []),
+    ...(scan.modules?.deps?.findings || []).map((f) => ({
+      severity: f.severity,
+      detail: `${f.package}@${f.version} — ${f.vulnId}`,
+      fixHint: f.summary,
+    })),
+  ];
+
+  const counts = allFindings.reduce((acc, f) => {
+    acc[f.severity] = (acc[f.severity] || 0) + 1;
+    return acc;
+  }, {});
 
   return (
-    <main className="min-h-screen p-8 max-w-2xl mx-auto">
-      <h1 className="font-[family-name:var(--font-display)] text-2xl mb-6">Exposure Report</h1>
-      <div className="flex justify-center mb-6">
-        <ExposureDial score={scan.overallScore} />
-      </div>
-      <button onClick={rescan} className="mb-6 px-4 py-2 bg-[var(--color-signal)] text-[#0A0E12] rounded font-medium">
-        Rescan
-      </button>
-      <FindingsList
-        findings={[
-          ...(scan.modules?.github?.findings || []),
-          ...(scan.modules?.deps?.findings || []).map((f) => ({
-            severity: f.severity,
-            detail: `${f.package}@${f.version} — ${f.vulnId}`,
-            fixHint: f.summary,
-          })),
-        ]}
-      />
-    </main>
+    <>
+      <Topbar />
+      <main className="max-w-4xl mx-auto p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="font-[family-name:var(--font-display)] text-xl">
+            Exposure Report
+          </h1>
+          <button
+            onClick={rescan}
+            disabled={loading}
+            className="px-4 py-2 bg-[var(--color-signal)] text-[#0A0E12] rounded font-medium text-sm disabled:opacity-50"
+          >
+            {loading ? "Scanning..." : "Rescan"}
+          </button>
+        </div>
+
+        <div className="grid grid-cols-4 gap-4 mb-3">
+          <StatCard label="Score" value={scan.overallScore} accent="var(--color-signal)" />
+          <StatCard label="Critical" value={counts.CRITICAL || 0} accent="var(--color-critical)" />
+          <StatCard label="High" value={counts.HIGH || 0} accent="var(--color-high)" />
+          <StatCard label="Total" value={allFindings.length} />
+        </div>
+
+        <div className="mb-8">
+          <SeverityBar counts={counts} />
+        </div>
+
+        <FindingsTable findings={allFindings} />
+      </main>
+    </>
   );
 }
