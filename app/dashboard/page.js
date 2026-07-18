@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import ExposureDial from "@/components/ExposureDial";
 import FindingsList from "@/components/FindingsList";
 
+
 export default function Dashboard() {
   const [scan, setScan] = useState(null);
 
@@ -25,7 +26,16 @@ export default function Dashboard() {
       <button onClick={rescan} className="mb-6 px-4 py-2 bg-[var(--color-signal)] text-[#0A0E12] rounded font-medium">
         Rescan
       </button>
-      <FindingsList findings={scan.modules?.github?.findings} />
+      <FindingsList
+        findings={[
+          ...(scan.modules?.github?.findings || []),
+          ...(scan.modules?.deps?.findings || []).map((f) => ({
+            severity: f.severity,
+            detail: `${f.package}@${f.version} — ${f.vulnId}`,
+            fixHint: f.summary,
+          })),
+        ]}
+      />
     </main>
   );
 }

@@ -7,11 +7,21 @@ const FindingSchema = new mongoose.Schema({
   fixHint: String,
 }, { _id: false });
 
+const DepFindingSchema = new mongoose.Schema({
+  type: String,
+  package: String,
+  version: String,
+  vulnId: String,
+  severity: String,
+  summary: String,
+}, { _id: false });
+
 const ScanSchema = new mongoose.Schema({
   userId: mongoose.Schema.Types.ObjectId,
   timestamp: { type: Date, default: Date.now },
   modules: {
     github: { findings: [FindingSchema], score: Number },
+    deps: { findings: [DepFindingSchema], score: Number },
   },
   overallScore: Number,
   previousScore: Number,
