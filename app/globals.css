@@ -1,18 +1,23 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@500;600&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
 @theme {
-  --color-bg-primary: #06080A;
-  --color-bg-secondary: #0B0C10;
-  --color-accent: #E8447A;
-  --color-critical: #DC2626;
-  --color-minor: #5B7FFF;
-  --color-soon: #F59E0B;
+  --color-bg: #14181D;
+  --color-surface: #1C2128;
+  --color-text: #C9D1D9;
+  --color-signal: #4FD1C5;
+  --color-critical: #E23744;
+  --color-high: #F0883E;
+  --color-medium: #E3B341;
+  --color-low: #58A6FF;
 
-  --font-body: "Switzer", sans-serif;
-  --font-wordmark: "Space Grotesk", sans-serif;
+  --font-display: "IBM Plex Serif", serif;
+  --font-body: "IBM Plex Sans", sans-serif;
+  --font-data: "IBM Plex Mono", monospace;
 }
 
 body {
-  background: var(--color-bg-primary);
+  background: var(--color-bg);
+  color: var(--color-text);
   font-family: var(--font-body);
 }
